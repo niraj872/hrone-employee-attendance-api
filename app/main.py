@@ -78,11 +78,18 @@ def compute_work_hours(punch_in: Optional[datetime], punch_out: Optional[datetim
     return float(hours.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
-def compute_overtime(punch_out: Optional[datetime], shift_end: str, day: str, shift_start: str) -> int:
+def compute_overtime(
+    punch_out: Optional[datetime],
+    shift_end: str,
+    day: str,
+    shift_start: str,
+    punch_in: Optional[datetime] = None,
+) -> int:
     if punch_out is None:
         return 0
     end = shift_instant(day, shift_end, True, shift_start)
-    minutes = int((punch_out - end).total_seconds()) // 60
+    overtime_start = end if punch_in is None else max(punch_in, end)
+    minutes = int((punch_out - overtime_start).total_seconds() // 60)
     return minutes if minutes >= 30 else 0
 
 
@@ -390,7 +397,7 @@ def punch_out(body: PunchOutIn):
         raise HTTPException(422, "punch-out must be after punch-in and within 24 hours")
     hours = compute_work_hours(record["punch_in"], ts)
     values = {"punch_out": ts, "work_hours": hours,
-              "overtime_minutes": compute_overtime(ts, emp["shift_end"], record["date"], emp["shift_start"]),
+              "overtime_minutes": compute_overtime(ts, emp["shift_end"], record["date"], emp["shift_start"], record["punch_in"]),
               "half_day": compute_half_day(hours)}
     updated = db.attendance_logs.find_one_and_update(
         {"_id": record["_id"], "punch_out": None},
@@ -432,7 +439,7 @@ def regularize(emp_code: str, date: str, body: RegularizeIn):
     hours = compute_work_hours(pi, po)
     values = {"status": status, "punch_in": pi, "punch_out": po, "work_hours": hours,
               "late_minutes": compute_late_minutes(pi, emp["shift_start"], date_str),
-              "overtime_minutes": compute_overtime(po, emp["shift_end"], date_str, emp["shift_start"]),
+              "overtime_minutes": compute_overtime(po, emp["shift_end"], date_str, emp["shift_start"], pi),
               "half_day": compute_half_day(hours)}
     changed = {key: {"old": old.get(key), "new": val} for key, val in values.items() if old.get(key) != val}
     if not changed:
