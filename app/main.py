@@ -115,10 +115,28 @@ def public_doc(doc: dict) -> dict:
         result["id"] = str(oid)
     elif "id" in result:
         result["id"] = str(result["id"])
+    def epoch_ms(value):
+        if isinstance(value, datetime):
+            return int(value.replace(tzinfo=UTC).timestamp() * 1000)
+        return value
+
     for key in ("punch_in", "punch_out", "created_at"):
-        if isinstance(result.get(key), datetime):
-            # API contract uses epoch milliseconds.
-            result[key] = int(result[key].replace(tzinfo=UTC).timestamp() * 1000)
+        result[key] = epoch_ms(result.get(key))
+
+    history = result.get("history")
+    if isinstance(history, list):
+        for entry in history:
+            if not isinstance(entry, dict):
+                continue
+            entry["at"] = epoch_ms(entry.get("at"))
+            changes = entry.get("changes", {})
+            if isinstance(changes, dict):
+                for field in ("punch_in", "punch_out"):
+                    change = changes.get(field)
+                    if isinstance(change, dict):
+                        change["from"] = epoch_ms(change.get("from"))
+                        change["to"] = epoch_ms(change.get("to"))
+
     return result
 
 
