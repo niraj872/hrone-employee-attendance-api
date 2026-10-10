@@ -1,4 +1,4 @@
-"""Employee Attendance & Analytics API - HROne assignment implementation."""
+﻿"""Employee Attendance & Analytics API - HROne assignment implementation."""
 from __future__ import annotations
 
 import os
@@ -116,6 +116,11 @@ def public_doc(doc: dict) -> dict:
     elif "id" in result:
         result["id"] = str(result["id"])
     def epoch_ms(value):
+        if isinstance(value, str):
+            try:
+                value = datetime.fromisoformat(value)
+            except ValueError:
+                return value
         if isinstance(value, datetime):
             return int(value.replace(tzinfo=UTC).timestamp() * 1000)
         return value
@@ -134,8 +139,9 @@ def public_doc(doc: dict) -> dict:
                 for field in ("punch_in", "punch_out"):
                     change = changes.get(field)
                     if isinstance(change, dict):
-                        change["from"] = epoch_ms(change.get("from"))
-                        change["to"] = epoch_ms(change.get("to"))
+                        for key in ("from", "to", "old", "new"):
+                            if key in change:
+                                change[key] = epoch_ms(change[key])
 
     return result
 
