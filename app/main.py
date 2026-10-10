@@ -281,13 +281,28 @@ class PunchOutIn(BaseModel):
 
 
 class RegularizeIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", strict=True)
     status: Optional[str] = None
     punch_in: Optional[int] = None
     punch_out: Optional[int] = None
-    reason: str = Field(min_length=1, max_length=500)
+    reason: str = Field(min_length=5, max_length=200)
+    regularized_by: str = Field(min_length=1, max_length=50)
 
+    @field_validator("status")
+    @classmethod
+    def valid_status(cls, value):
+        if value is not None and value not in ALL_STATUSES:
+            raise ValueError("invalid status")
+        return value
 
+    @field_validator("punch_in", "punch_out")
+    @classmethod
+    def valid_epoch_millis(cls, value):
+        if value is None:
+            return value
+        if value < 0 or value > 253402300799999:
+            raise ValueError("timestamp must be valid epoch milliseconds")
+        return value
 @app.on_event("startup")
 def ensure_indexes() -> None:
     """Idempotent indexes; unique keys enforce concurrency-safe identities."""
@@ -441,10 +456,20 @@ def regularize(emp_code: str, date: str, body: RegularizeIn):
               "late_minutes": compute_late_minutes(pi, emp["shift_start"], date_str),
               "overtime_minutes": compute_overtime(po, emp["shift_end"], date_str, emp["shift_start"], pi),
               "half_day": compute_half_day(hours)}
-    changed = {key: {"old": old.get(key), "new": val} for key, val in values.items() if old.get(key) != val}
+    changed = {
+        key: {"from": old.get(key), "to": val}
+        for key, val in values.items()
+        if old.get(key) != val
+    }
     if not changed:
         raise HTTPException(422, "regularization has no changes")
-    history = {"at": now_utc_naive(), "reason": body.reason, "changes": changed}
+
+    history = {
+        "at": now_utc_naive(),
+        "by": body.regularized_by,
+        "reason": body.reason,
+        "changes": changed,
+    }
     filt: dict[str, Any] = {"_id": old["_id"]}
     if "version" in old:
         filt["version"] = old["version"]
