@@ -1,4 +1,4 @@
-# Employee Attendance & Analytics API - HROne Assignment
+﻿# Employee Attendance & Analytics API - HROne Assignment
 
 FastAPI + PyMongo implementation for the provided employee attendance assignment.
 
@@ -36,3 +36,4 @@ python -m compileall -q app tests
 
 ## Important verification note
 The included unit tests and syntax check are not a substitute for running the API against MongoDB 6+/7 with the assignment's full edge cases and performance dataset. Check `REVIEW.md` before submission.
+
