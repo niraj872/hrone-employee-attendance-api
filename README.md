@@ -1,4 +1,4 @@
-# Employee Attendance & Analytics API — HROne Assignment
+# Employee Attendance & Analytics API - HROne Assignment
 
 FastAPI + PyMongo implementation for the provided employee attendance assignment.
 
