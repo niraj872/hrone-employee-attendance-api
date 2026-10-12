@@ -1,0 +1,246 @@
+﻿from datetime import datetime, timezone
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app, db
+
+CODES = ["EMP980001", "EMP980002", "EMP980003"]
+TEST_DAY = "2026-10-12"
+PUNCH_IN_MS = int(
+    datetime(2026, 10, 12, 4, 0, tzinfo=timezone.utc).timestamp() * 1000
+)
+PUNCH_OUT_MS = int(
+    datetime(2026, 10, 12, 12, 0, tzinfo=timezone.utc).timestamp() * 1000
+)
+
+
+@pytest.fixture
+def client():
+    with TestClient(app) as c:
+        yield c
+
+
+@pytest.fixture(autouse=True)
+def isolated_records():
+    # Safety guard: never run cleanup against the original database.
+    assert db.name == "attendance_test_db", (
+        f"Refusing test cleanup against database: {db.name}"
+    )
+    for code in CODES:
+        db.attendance_logs.delete_many({"emp_code": code})
+        db.employees.delete_many({"emp_code": code})
+    yield
+    for code in CODES:
+        db.attendance_logs.delete_many({"emp_code": code})
+        db.employees.delete_many({"emp_code": code})
+
+
+def employee_payload(code=CODES[0]):
+    return {
+        "emp_code": code,
+        "name": "Regression Test Employee",
+        "email": f"{code.lower()}@example.test",
+        "department": "QA_REGRESSION",
+        "joined_on": TEST_DAY,
+        "shift_start": "09:30",
+        "shift_end": "18:30",
+    }
+
+
+def create_employee(client, code=CODES[0]):
+    response = client.post("/employees", json=employee_payload(code))
+    assert response.status_code == 201, response.text
+    return response
+
+
+def punch_in(client, code=CODES[0]):
+    return client.post(
+        "/attendance/punch-in",
+        json={
+            "emp_code": code,
+            "punched_at": PUNCH_IN_MS,
+            "status": "PRESENT",
+        },
+    )
+
+
+def test_employee_create_and_duplicate_rejected(client):
+    assert client.post(
+        "/employees", json=employee_payload()
+    ).status_code == 201
+
+    duplicate = client.post("/employees", json=employee_payload())
+    assert duplicate.status_code == 409, duplicate.text
+
+
+def test_employee_missing_required_fields_rejected(client):
+    response = client.post("/employees", json={"emp_code": CODES[0]})
+    assert response.status_code == 422, response.text
+
+
+def test_punch_in_missing_employee_returns_404(client):
+    response = punch_in(client)
+    assert response.status_code == 404, response.text
+
+
+def test_invalid_punch_in_status_rejected(client):
+    create_employee(client)
+    response = client.post(
+        "/attendance/punch-in",
+        json={
+            "emp_code": CODES[0],
+            "punched_at": PUNCH_IN_MS,
+            "status": "INVALID",
+        },
+    )
+    assert response.status_code == 422, response.text
+
+
+def test_duplicate_punch_in_rejected(client):
+    create_employee(client)
+    assert punch_in(client).status_code == 201
+    duplicate = punch_in(client)
+    assert duplicate.status_code == 409, duplicate.text
+    assert db.attendance_logs.count_documents(
+        {"emp_code": CODES[0], "date": TEST_DAY}
+    ) == 1
+
+
+def test_punch_out_missing_employee_returns_404(client):
+    response = client.post(
+        "/attendance/punch-out",
+        json={"emp_code": CODES[0], "punched_at": PUNCH_OUT_MS},
+    )
+    assert response.status_code == 404, response.text
+
+
+def test_punch_out_without_punch_in_returns_404(client):
+    create_employee(client)
+    response = client.post(
+        "/attendance/punch-out",
+        json={"emp_code": CODES[0], "punched_at": PUNCH_OUT_MS},
+    )
+    assert response.status_code == 404, response.text
+
+
+def test_punch_out_beyond_24_hours_rejected(client):
+    create_employee(client)
+    assert punch_in(client).status_code == 201
+
+    after_25_hours = int(
+        datetime(2026, 10, 13, 5, 0, tzinfo=timezone.utc).timestamp() * 1000
+    )
+    response = client.post(
+        "/attendance/punch-out",
+        json={"emp_code": CODES[0], "punched_at": after_25_hours},
+    )
+    assert response.status_code == 422, response.text
+
+
+def test_valid_punch_out_updates_record(client):
+    create_employee(client)
+    assert punch_in(client).status_code == 201
+
+    response = client.post(
+        "/attendance/punch-out",
+        json={"emp_code": CODES[0], "punched_at": PUNCH_OUT_MS},
+    )
+    assert response.status_code == 200, response.text
+    saved = db.attendance_logs.find_one({"emp_code": CODES[0], "date": TEST_DAY})
+    assert saved is not None
+    assert saved["punch_out"] is not None
+    assert saved["work_hours"] == 8.0
+
+
+def test_patch_invalid_date_returns_422(client):
+    response = client.patch(
+        f"/attendance/{CODES[0]}/2026-02-30",
+        json={
+            "status": "WFH",
+            "reason": "Regression test",
+            "regularized_by": "test",
+        },
+    )
+    assert response.status_code == 422, response.text
+
+
+def test_patch_missing_employee_returns_404(client):
+    response = client.patch(
+        f"/attendance/{CODES[0]}/{TEST_DAY}",
+        json={
+            "status": "WFH",
+            "reason": "Regression test",
+            "regularized_by": "test",
+        },
+    )
+    assert response.status_code == 404, response.text
+
+
+def test_patch_missing_attendance_returns_404(client):
+    create_employee(client)
+    response = client.patch(
+        f"/attendance/{CODES[0]}/{TEST_DAY}",
+        json={
+            "status": "WFH",
+            "reason": "Regression test",
+            "regularized_by": "test",
+        },
+    )
+    assert response.status_code == 404, response.text
+
+
+def test_patch_invalid_status_rejected(client):
+    create_employee(client)
+    assert punch_in(client).status_code == 201
+
+    response = client.patch(
+        f"/attendance/{CODES[0]}/{TEST_DAY}",
+        json={
+            "status": "INVALID",
+            "reason": "Regression test",
+            "regularized_by": "test",
+        },
+    )
+    assert response.status_code == 422, response.text
+
+
+def test_overnight_shift_punch_out_next_day(client):
+    code = "EMP980003"
+    payload = employee_payload(code)
+    payload["shift_start"] = "22:00"
+    payload["shift_end"] = "06:00"
+
+    created = client.post("/employees", json=payload)
+    assert created.status_code == 201, created.text
+
+    punch_in_ms = int(
+        datetime(2026, 10, 12, 16, 30, tzinfo=timezone.utc).timestamp() * 1000
+    )
+    punch_out_ms = int(
+        datetime(2026, 10, 13, 0, 30, tzinfo=timezone.utc).timestamp() * 1000
+    )
+
+    started = client.post(
+        "/attendance/punch-in",
+        json={
+            "emp_code": code,
+            "punched_at": punch_in_ms,
+            "status": "PRESENT",
+        },
+    )
+    assert started.status_code == 201, started.text
+    assert started.json()["date"] == "2026-10-12"
+    assert started.json()["late_minutes"] == 0
+
+    finished = client.post(
+        "/attendance/punch-out",
+        json={"emp_code": code, "punched_at": punch_out_ms},
+    )
+    assert finished.status_code == 200, finished.text
+
+    record = finished.json()
+    assert record["date"] == "2026-10-12"
+    assert record["work_hours"] == 8.0
+    assert record["overtime_minutes"] == 0
+

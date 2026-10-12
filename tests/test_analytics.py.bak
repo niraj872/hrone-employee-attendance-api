@@ -1,0 +1,185 @@
+﻿from datetime import datetime, timezone
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app.main import app, db
+
+
+EMPLOYEES = ["EMP991101", "EMP991102"]
+DEPARTMENT = "ANALYTICS_TEST"
+
+
+@pytest.fixture
+def client():
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+@pytest.fixture(autouse=True)
+def clean_data():
+    db.attendance_logs.delete_many({"emp_code": {"$in": EMPLOYEES}})
+    db.employees.delete_many({"emp_code": {"$in": EMPLOYEES}})
+    yield
+    db.attendance_logs.delete_many({"emp_code": {"$in": EMPLOYEES}})
+    db.employees.delete_many({"emp_code": {"$in": EMPLOYEES}})
+
+
+def create_employee(client, code, joined_on="2026-10-01"):
+    response = client.post("/employees", json={
+        "emp_code": code,
+        "name": f"Analytics {code}",
+        "email": f"{code.lower()}@example.test",
+        "department": DEPARTMENT,
+        "joined_on": joined_on,
+        "shift_start": "09:30",
+        "shift_end": "18:30",
+    })
+    assert response.status_code == 201, response.text
+
+
+def insert_attendance(code, day, *, half_day, late, overtime, work_hours):
+    db.attendance_logs.insert_one({
+        "emp_code": code,
+        "date": day,
+        "status": "PRESENT",
+        "punch_in": datetime(2026, 10, 5, 4, 0, tzinfo=timezone.utc).replace(tzinfo=None),
+        "punch_out": datetime(2026, 10, 5, 12, 30, tzinfo=timezone.utc).replace(tzinfo=None),
+        "work_hours": work_hours,
+        "late_minutes": late,
+        "overtime_minutes": overtime,
+        "half_day": half_day,
+        "history": [],
+        "version": 1,
+    })
+
+
+def test_monthly_excludes_weekend_from_present_days_but_keeps_late_totals(client):
+    create_employee(client, EMPLOYEES[0])
+    insert_attendance(
+        EMPLOYEES[0], "2026-10-05",
+        half_day=True, late=5, overtime=0, work_hours=4.49,
+    )
+    insert_attendance(
+        EMPLOYEES[0], "2026-10-10",
+        half_day=False, late=7, overtime=35, work_hours=8.5,
+    )
+
+    response = client.get(
+        f"/analytics/employees/{EMPLOYEES[0]}/monthly",
+        params={"month": "2026-10"},
+    )
+    assert response.status_code == 200, response.text
+    result = response.json()
+
+    assert result["working_days"] == 22
+    assert result["present_days"] == 0.5
+    assert result["late_count"] == 2
+    assert result["total_late_minutes"] == 12
+    assert result["total_overtime_minutes"] == 35
+
+
+def test_department_summary_counts_employee_without_logs(client):
+    create_employee(client, EMPLOYEES[0], "2026-10-01")
+    create_employee(client, EMPLOYEES[1], "2026-10-07")
+
+    insert_attendance(
+        EMPLOYEES[0], "2026-10-05",
+        half_day=True, late=5, overtime=0, work_hours=4.49,
+    )
+
+    response = client.get(
+        "/analytics/departments/summary",
+        params={"month": "2026-10", "department": DEPARTMENT},
+    )
+    assert response.status_code == 200, response.text
+
+    items = response.json()["items"]
+    assert len(items) == 1
+    assert items[0]["headcount"] == 2
+    assert items[0]["present_days"] == 0.5
+
+
+def test_department_trend_weekend_rate_is_null(client):
+    create_employee(client, EMPLOYEES[0])
+    create_employee(client, EMPLOYEES[1])
+
+    insert_attendance(
+        EMPLOYEES[0], "2026-10-10",
+        half_day=False, late=0, overtime=0, work_hours=8.5,
+    )
+
+    response = client.get(
+        f"/analytics/departments/{DEPARTMENT}/trend",
+        params={"from": "2026-10-05", "to": "2026-10-11"},
+    )
+    assert response.status_code == 200, response.text
+
+    items = response.json()["items"]
+    saturday = next(item for item in items if item["date"] == "2026-10-10")
+
+    assert saturday["is_working_day"] is False
+    assert saturday["attendance_rate"] is None
+    assert saturday["headcount"] == 2
+
+def test_mid_month_joiner_without_logs_has_correct_monthly_analytics(client):
+    code = EMPLOYEES[1]
+    create_employee(client, code, "2026-10-15")
+
+    response = client.get(
+        f"/analytics/employees/{code}/monthly",
+        params={"month": "2026-10"},
+    )
+
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["working_days"] == 12
+    assert result["present_days"] == 0
+    assert result["late_count"] == 0
+    assert result["total_late_minutes"] == 0
+    assert result["total_overtime_minutes"] == 0
+    assert result["attendance_pct"] == 0
+
+
+def test_late_leaderboard_assigns_same_rank_for_equal_totals(client):
+    create_employee(client, EMPLOYEES[0])
+    create_employee(client, EMPLOYEES[1])
+
+    for code in EMPLOYEES:
+        insert_attendance(
+            code, "2026-10-05",
+            half_day=False, late=15, overtime=0, work_hours=8.5,
+        )
+
+    response = client.get(
+        "/analytics/leaderboard/late",
+        params={"month": "2026-10", "limit": 10},
+    )
+    assert response.status_code == 200, response.text
+
+    items = response.json()["items"]
+    tied = [item for item in items if item["emp_code"] in EMPLOYEES]
+
+    assert len(tied) == 2
+    assert {item["rank"] for item in tied} == {1}
+    assert {item["total_late_minutes"] for item in tied} == {15}
+
+
+def test_department_trend_includes_weekdays_without_attendance_logs(client):
+    create_employee(client, EMPLOYEES[0])
+    create_employee(client, EMPLOYEES[1])
+
+    response = client.get(
+        f"/analytics/departments/{DEPARTMENT}/trend",
+        params={"from": "2026-10-05", "to": "2026-10-07"},
+    )
+    assert response.status_code == 200, response.text
+
+    items = response.json()["items"]
+    assert [item["date"] for item in items] == [
+        "2026-10-05", "2026-10-06", "2026-10-07"
+    ]
+    assert all(item["is_working_day"] is True for item in items)
+    assert all(item["headcount"] == 2 for item in items)
+    assert all(item["present_count"] == 0 for item in items)
+    assert all(item["attendance_rate"] == 0 for item in items)

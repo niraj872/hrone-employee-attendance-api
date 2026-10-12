@@ -8,10 +8,10 @@ Before submission, run and record these checks against MongoDB 6+/7:
 - [ ] `python -m pytest -q`
 - [ ] `/health` returns 200 when MongoDB is reachable and 503 when unavailable.
 - [ ] Concurrent duplicate employee and same-employee/same-date punch-in requests produce one success and conflicts for duplicates.
-- [ ] Concurrent punch-out requests produce only one success.
+- [x] Concurrent punch-out requests produce only one success.
 - [ ] Concurrent regularization does not lose history entries; stale updates return 409.
 - [ ] Verify monthly/department results for weekends, half-days, mid-month joiners, no-log employees, ties, missing weekdays, and overnight shifts.
-- [ ] Run all `/admin/explain/{endpoint}` variants on the 100k-record fixture and inspect execution stats/index use.
+- [x] Run all `/admin/explain/{endpoint}` variants on the 100k-record fixture and inspect execution stats/index use.
 - [ ] Confirm startup index creation succeeds with the actual dataset (unique indexes require no existing duplicate natural keys).
 - [ ] Check response schemas and status codes against `openapi.yaml`.
 
