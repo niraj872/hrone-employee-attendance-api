@@ -37,3 +37,7 @@ python -m compileall -q app tests
 ## Important verification note
 The included unit tests and syntax check are not a substitute for running the API against MongoDB 6+/7 with the assignment's full edge cases and performance dataset. Check `REVIEW.md` before submission.
 
+
+
+## Authentication
+Protected write and admin endpoints require an x-api-key header with value secret-token.
