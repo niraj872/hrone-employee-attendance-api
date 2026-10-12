@@ -2,20 +2,40 @@
 """Employee Attendance & Analytics API - HROne assignment implementation."""
 from __future__ import annotations
 
+import os
+
+import hmac
+
 from fastapi import Depends, Header, HTTPException, status
 
-async def verify_token(x_api_key: str = Header(None)):
-    import os
-    if os.environ.get("TESTING") == "true":
+async def verify_token(
+    x_api_key: str = Header(
+        None,
+        description="API Key for authentication"
+    )
+):
+    testing = os.environ.get("TESTING", "").lower() == "true" and os.environ.get("APP_ENV", "").lower() != "production"
+    production = os.environ.get("APP_ENV", "").lower() == "production"
+
+    if testing and not production:
         return x_api_key
-    if x_api_key != "secret-token":
+
+    expected_key = os.environ.get("API_KEY")
+
+    if not expected_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="API authentication is not configured",
+        )
+
+    if not x_api_key or not hmac.compare_digest(x_api_key, expected_key):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing authentication credentials"
+            detail="Invalid or missing authentication credentials",
         )
+
     return x_api_key
 
-import os
 import calendar
 import logging
 from datetime import date, datetime, time, timedelta, timezone
@@ -56,7 +76,17 @@ def custom_openapi():
         }
     }
     # Apply security requirement globally or let routes specify it
-    openapi_schema["security"] = [{"ApiKeyAuth": []}]
+    protected_operations = {
+        ("/employees", "post"),
+        ("/attendance/punch-in", "post"),
+        ("/attendance/punch-out", "post"),
+        ("/attendance/{emp_code}/{date}", "patch"),
+        ("/admin/explain/{endpoint}", "get"),
+    }
+    for path, methods in openapi_schema.get("paths", {}).items():
+        for method, operation in methods.items():
+            if (path, method.lower()) in protected_operations:
+                operation["security"] = [{"ApiKeyAuth": []}]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
