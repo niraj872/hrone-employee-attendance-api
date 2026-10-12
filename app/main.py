@@ -80,6 +80,7 @@ def custom_openapi():
         ("/employees", "post"),
         ("/attendance/punch-in", "post"),
         ("/attendance/punch-out", "post"),
+        ("/attendance", "get"),
         ("/attendance/{emp_code}/{date}", "patch"),
         ("/admin/explain/{endpoint}", "get"),
     }
