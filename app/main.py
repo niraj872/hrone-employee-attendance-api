@@ -634,7 +634,7 @@ def punch_in(body: PunchInIn):
     return public_doc(doc)
 
 
-@app.get("/attendance")
+@app.get("/attendance", dependencies=[Depends(verify_token)])
 def list_attendance(emp_code: Optional[str] = None, date_from: Optional[str] = None, date_to: Optional[str] = None,
                     status: Optional[str] = None, page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100)):
     skip = pagination(page, page_size)
