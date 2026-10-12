@@ -24,8 +24,8 @@ async def verify_token(
 
     if not expected_key:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="API authentication is not configured",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing authentication credentials",
         )
 
     if not x_api_key or not hmac.compare_digest(x_api_key, expected_key):
