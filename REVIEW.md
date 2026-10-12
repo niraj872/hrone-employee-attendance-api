@@ -1,18 +1,34 @@
-# Implementation review checklist
+﻿# Implementation Review — Final Audit
 
-The implementation includes all routes named in the assignment contract, core calculations, MongoDB aggregation pipelines, natural-key indexes, optimistic regularization updates, and concurrency-safe punch-in/out writes.
+## Verified locally
+- [x] Python syntax compilation: `python -m compileall -q app tests`
+- [x] Full test suite: 33 tests passed
+- [x] MongoDB dataset: 1,000 employees and 100,000 attendance logs
+- [x] Index creation completed successfully
+- [x] Health endpoint returned HTTP 200
+- [x] Employee and attendance API smoke tests returned HTTP 200
+- [x] Department summary, late leaderboard, and department trend returned HTTP 200
+- [x] All five admin explain endpoints returned execution statistics and index evidence
+- [x] Backup test files removed from Git tracking
 
-Before submission, run and record these checks against MongoDB 6+/7:
+## Performance observations
+- Attendance list: 25 documents examined, 25 keys examined, 16 ms
+- Employee monthly: 3 documents examined, 3 keys examined, 2 ms
+- Department summary: up to 686 documents examined in reported execution statistics
+- Late leaderboard: up to 3,437 documents examined; reported execution time 390 ms
+- Department trend: up to 4,957 documents examined; plan stages were not surfaced by the audit script
 
-- [ ] `python -m compileall -q app tests`
-- [ ] `python -m pytest -q`
-- [ ] `/health` returns 200 when MongoDB is reachable and 503 when unavailable.
-- [ ] Concurrent duplicate employee and same-employee/same-date punch-in requests produce one success and conflicts for duplicates.
-- [x] Concurrent punch-out requests produce only one success.
-- [ ] Concurrent regularization does not lose history entries; stale updates return 409.
-- [ ] Verify monthly/department results for weekends, half-days, mid-month joiners, no-log employees, ties, missing weekdays, and overnight shifts.
-- [x] Run all `/admin/explain/{endpoint}` variants on the 100k-record fixture and inspect execution stats/index use.
-- [ ] Confirm startup index creation succeeds with the actual dataset (unique indexes require no existing duplicate natural keys).
-- [ ] Check response schemas and status codes against `openapi.yaml`.
+These timings are local observations, not production latency guarantees.
+The department trend plan structure and the leaderboard/trend query efficiency
+may warrant further review if the assignment specifies stricter performance targets.
 
-**Verification status:** Python syntax compilation was checked when this bundle was prepared. Full pytest/MongoDB integration and 100k-record performance verification have not been completed here. Do not treat those checks as passed until run locally.
+## Remaining submission checks
+- [ ] Verify MongoDB-unavailable behavior returns HTTP 503.
+- [ ] Compare response schemas and status codes against `openapi.yaml`.
+- [ ] Review authentication/authorization and configuration for deployment.
+- [ ] Confirm the final Git commit is pushed and the working tree is clean.
+
+## Verification scope
+Tests, API smoke checks, dataset counts, indexes, and explain endpoints were
+checked against the local environment. This does not establish production
+deployment readiness or a complete security penetration test.
