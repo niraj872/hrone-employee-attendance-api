@@ -1,4 +1,4 @@
-﻿# Employee Attendance & Analytics API - HROne Assignment
+# Employee Attendance & Analytics API - HROne Assignment
 
 FastAPI + PyMongo implementation for the provided employee attendance assignment.
 
@@ -40,4 +40,4 @@ The included unit tests and syntax check are not a substitute for running the AP
 
 
 ## Authentication
-Protected write and admin endpoints require an x-api-key header with value secret-token.
+Protected write and admin endpoints require an x-api-key header whose value matches the API_KEY environment variable. Configure API_KEY before starting the application, and never commit real API keys.

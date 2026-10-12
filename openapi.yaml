@@ -113,6 +113,8 @@ paths:
     post:
       tags: [employees]
       operationId: createEmployee
+      security:
+        - ApiKeyAuth: []
       summary: Create an employee
       description: |
         The client supplies `emp_code` (the customer's own code). It must be unique, **enforced by a database unique
@@ -155,6 +157,8 @@ paths:
     post:
       tags: [attendance]
       operationId: punchIn
+      security:
+        - ApiKeyAuth: []
       summary: Record a punch-in
       description: |
         Creates the day's record. `date` follows R1 and `late_minutes` follows R2; `punch_out` and `work_hours` start as
@@ -181,6 +185,8 @@ paths:
     post:
       tags: [attendance]
       operationId: punchOut
+      security:
+        - ApiKeyAuth: []
       summary: Record a punch-out
       description: |
         Closes the employee's most recent record whose `punch_in` is at or before `punched_at` (this must work across
@@ -227,6 +233,8 @@ paths:
     patch:
       tags: [attendance]
       operationId: regularizeAttendance
+      security:
+        - ApiKeyAuth: []
       summary: Regularize (manually correct) one day's record
       description: |
         The record is addressed by its natural key: the employee's `emp_code` and the attendance `date`
@@ -364,6 +372,8 @@ paths:
     get:
       tags: [admin]
       operationId: explainEndpoint
+      security:
+        - ApiKeyAuth: []
       summary: MongoDB explain for an endpoint's main query
       description: |
         Runs `explain` with `executionStats` verbosity for the **main query or aggregation of the named endpoint,
@@ -403,6 +413,11 @@ paths:
                   explain: {type: object, additionalProperties: true, description: Raw MongoDB explain document as JSON.}
         '422': {$ref: '#/components/responses/ValidationError'}
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
   parameters:
     Page:
       name: page
