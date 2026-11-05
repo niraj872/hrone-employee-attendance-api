@@ -1,4 +1,4 @@
-
+﻿
 """Employee Attendance & Analytics API - HROne assignment implementation."""
 from __future__ import annotations
 
@@ -43,6 +43,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
 
 from dotenv import load_dotenv
+from autter_tracing import init_tracing
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from fastapi import Depends, FastAPI, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pymongo import ASCENDING, DESCENDING, MongoClient, ReturnDocument
@@ -50,6 +52,8 @@ from pymongo.errors import DuplicateKeyError, PyMongoError, ServerSelectionTimeo
 
 # OS environment variables take precedence over values in .env.
 load_dotenv(override=False)
+
+init_tracing()
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 MONGO_DB = os.getenv("MONGO_DB", "attendance_db")
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=2500, tz_aware=False)
@@ -92,6 +96,7 @@ def custom_openapi():
     return app.openapi_schema
 
 app = FastAPI(title="Employee Attendance & Analytics API", version="2.0.0")
+FastAPIInstrumentor.instrument_app(app)
 
 
 def now_utc_naive() -> datetime:
