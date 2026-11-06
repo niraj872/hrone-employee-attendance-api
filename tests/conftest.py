@@ -1,4 +1,7 @@
-﻿import pytest
+import os
+os.environ["AUTTER_TRACING_ENABLED"] = "false"
+
+import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 

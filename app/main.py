@@ -1,4 +1,4 @@
-﻿
+
 """Employee Attendance & Analytics API - HROne assignment implementation."""
 from __future__ import annotations
 
@@ -43,7 +43,8 @@ from pymongo.errors import DuplicateKeyError, PyMongoError, ServerSelectionTimeo
 # OS environment variables take precedence over values in .env.
 load_dotenv(override=False)
 
-init_tracing()
+if os.getenv("AUTTER_TRACING_ENABLED", "true").lower() == "true":
+    init_tracing()
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 MONGO_DB = os.getenv("MONGO_DB", "attendance_db")
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=2500, tz_aware=False)
