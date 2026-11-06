@@ -1,4 +1,4 @@
-﻿
+
 """Employee Attendance & Analytics API - HROne assignment implementation."""
 from __future__ import annotations
 
@@ -6,20 +6,10 @@ import os
 
 import hmac
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 
-async def verify_token(
-    x_api_key: str = Header(
-        None,
-        description="API Key for authentication"
-    )
-):
-    testing = os.environ.get("TESTING", "").lower() == "true" and os.environ.get("APP_ENV", "").lower() != "production"
-    production = os.environ.get("APP_ENV", "").lower() == "production"
-
-    if testing and not production:
-        return x_api_key
-
+async def verify_token(request: Request):
+    x_api_key = request.headers.get("x-api-key")
     expected_key = os.environ.get("API_KEY")
 
     if not expected_key:
@@ -53,7 +43,8 @@ from pymongo.errors import DuplicateKeyError, PyMongoError, ServerSelectionTimeo
 # OS environment variables take precedence over values in .env.
 load_dotenv(override=False)
 
-init_tracing()
+if os.getenv("AUTTER_TRACING_ENABLED", "true").lower() == "true":
+    init_tracing()
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 MONGO_DB = os.getenv("MONGO_DB", "attendance_db")
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=2500, tz_aware=False)
