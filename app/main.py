@@ -6,20 +6,10 @@ import os
 
 import hmac
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 
-async def verify_token(
-    x_api_key: str = Header(
-        None,
-        description="API Key for authentication"
-    )
-):
-    testing = os.environ.get("TESTING", "").lower() == "true" and os.environ.get("APP_ENV", "").lower() != "production"
-    production = os.environ.get("APP_ENV", "").lower() == "production"
-
-    if testing and not production:
-        return x_api_key
-
+async def verify_token(request: Request):
+    x_api_key = request.headers.get("x-api-key")
     expected_key = os.environ.get("API_KEY")
 
     if not expected_key:

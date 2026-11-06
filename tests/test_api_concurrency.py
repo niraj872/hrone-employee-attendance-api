@@ -2,18 +2,12 @@
 from datetime import date, datetime, timezone
 
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app, db
+from app.main import db
 
 
 TEST_EMPLOYEES = ["EMP990001", "EMP990002", "EMP990003", "EMP990004"]
 
-
-@pytest.fixture
-def client():
-    with TestClient(app) as test_client:
-        yield test_client
 
 
 @pytest.fixture(autouse=True)
