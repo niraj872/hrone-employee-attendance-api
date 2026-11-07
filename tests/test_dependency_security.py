@@ -1,9 +1,8 @@
-﻿"""Guards the minimum versions declared for security-sensitive dependencies.
+"""Guards the minimum versions declared for security-sensitive dependencies.
 
 The app declares lower bounds with ``>=`` in requirements.txt. A floor below
-the version that fixes a published advisory leaves fresh installs vulnerable
-and, in the case of FastAPI 0.65.2, would also downgrade to a release that
-requires Pydantic v1. Keep every declared floor at or above the fixed version.
+the version that fixes a published advisory leaves fresh installs vulnerable.
+Keep every declared floor at or above the fixed version.
 """
 
 import re
@@ -14,8 +13,8 @@ REQUIREMENTS = Path(__file__).resolve().parents[1] / "requirements.txt"
 # Package -> lowest version that contains the fix for the advisories we track.
 FIXED_FLOORS = {
     "httpx": "0.23.0",      # GHSA-h8pj-cxx2-jfg2
-    "fastapi": "0.109.1",   # PYSEC-2024-38 (also covers GHSA-8h2j-cgx8-6xv7)
-    "pymongo": "4.18.2",    # GHSA-v4x9-3549-crwv
+    "fastapi": "0.109.1",   # PYSEC-2024-38 / GHSA-8h2j-cgx8-6xv7
+    "pymongo": "4.18.3",    # 4.18.2 fixes CVE-2026-96747/8/9; 4.18.3 fixes CVE-2026-106435
     "uvicorn": "0.11.7",    # GHSA-33c7-2mpw-hg34, GHSA-f97h-2pfx-f59f
 }
 
