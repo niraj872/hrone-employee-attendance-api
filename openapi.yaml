@@ -1,4 +1,4 @@
-openapi: "3.0.3"
+openapi: 3.1.0
 info:
   title: Employee Attendance & Analytics API
   version: 2.0.0
@@ -17,15 +17,6 @@ paths:
     post:
       summary: Create Employee
       operationId: create_employee_employees_post
-      parameters:
-      - name: x-api-key
-        in: header
-        required: false
-        schema:
-          type: string
-          description: API Key for authentication
-          title: X-Api-Key
-        description: API Key for authentication
       requestBody:
         required: true
         content:
@@ -91,21 +82,12 @@ paths:
     post:
       summary: Punch In
       operationId: punch_in_attendance_punch_in_post
-      parameters:
-      - name: x-api-key
-        in: header
-        required: false
-        schema:
-          type: string
-          description: API Key for authentication
-          title: X-Api-Key
-        description: API Key for authentication
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PunchInIn'
+        required: true
       responses:
         '201':
           description: Successful Response
@@ -174,14 +156,6 @@ paths:
           minimum: 1
           default: 20
           title: Page Size
-      - name: x-api-key
-        in: header
-        required: false
-        schema:
-          type: string
-          description: API Key for authentication
-          title: X-Api-Key
-        description: API Key for authentication
       responses:
         '200':
           description: Successful Response
@@ -200,21 +174,12 @@ paths:
     post:
       summary: Punch Out
       operationId: punch_out_attendance_punch_out_post
-      parameters:
-      - name: x-api-key
-        in: header
-        required: false
-        schema:
-          type: string
-          description: API Key for authentication
-          title: X-Api-Key
-        description: API Key for authentication
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PunchOutIn'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -246,14 +211,6 @@ paths:
         schema:
           type: string
           title: Date
-      - name: x-api-key
-        in: header
-        required: false
-        schema:
-          type: string
-          description: API Key for authentication
-          title: X-Api-Key
-        description: API Key for authentication
       requestBody:
         required: true
         content:
@@ -510,14 +467,6 @@ paths:
           minimum: 1
           default: 10
           title: Limit
-      - name: x-api-key
-        in: header
-        required: false
-        schema:
-          type: string
-          description: API Key for authentication
-          title: X-Api-Key
-        description: API Key for authentication
       responses:
         '200':
           description: Successful Response
@@ -688,6 +637,3 @@ components:
       type: apiKey
       in: header
       name: x-api-key
-
-
-# Business Rules R1, R2, R3, R4, R5, R6, R7, R8, R9, R10 compliance documented.

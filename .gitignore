@@ -8,3 +8,11 @@ venv/
 htmlcov/
 .idea/
 .vscode/
+
+# Temporary and backup files
+*.bak
+pr-description-backup.md
+pr-description-updated.md
+
+# Temporary pipeline backups
+*.pipeline-backup

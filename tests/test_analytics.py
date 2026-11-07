@@ -1,4 +1,6 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
+
+from tests.helpers import create_employee
 
 import pytest
 
@@ -19,18 +21,6 @@ def clean_data():
     db.employees.delete_many({"emp_code": {"$in": EMPLOYEES}})
 
 
-def create_employee(client, code, joined_on="2026-10-01"):
-    response = client.post("/employees", json={
-        "emp_code": code,
-        "name": f"Analytics {code}",
-        "email": f"{code.lower()}@example.test",
-        "department": DEPARTMENT,
-        "joined_on": joined_on,
-        "shift_start": "09:30",
-        "shift_end": "18:30",
-    })
-    assert response.status_code == 201, response.text
-
 
 def insert_attendance(code, day, *, half_day, late, overtime, work_hours):
     db.attendance_logs.insert_one({
@@ -49,7 +39,7 @@ def insert_attendance(code, day, *, half_day, late, overtime, work_hours):
 
 
 def test_monthly_excludes_weekend_from_present_days_but_keeps_late_totals(client):
-    create_employee(client, EMPLOYEES[0])
+    create_employee(client, EMPLOYEES[0], name=f"Analytics {EMPLOYEES[0]}", department=DEPARTMENT, joined_on="2026-10-01")
     insert_attendance(
         EMPLOYEES[0], "2026-10-05",
         half_day=True, late=5, overtime=0, work_hours=4.49,
@@ -74,8 +64,8 @@ def test_monthly_excludes_weekend_from_present_days_but_keeps_late_totals(client
 
 
 def test_department_summary_counts_employee_without_logs(client):
-    create_employee(client, EMPLOYEES[0], "2026-10-01")
-    create_employee(client, EMPLOYEES[1], "2026-10-07")
+    create_employee(client, EMPLOYEES[0], name=f"Analytics {EMPLOYEES[0]}", department=DEPARTMENT, joined_on="2026-10-01")
+    create_employee(client, EMPLOYEES[1], name=f"Analytics {EMPLOYEES[1]}", department=DEPARTMENT, joined_on="2026-10-07")
 
     insert_attendance(
         EMPLOYEES[0], "2026-10-05",
@@ -95,8 +85,8 @@ def test_department_summary_counts_employee_without_logs(client):
 
 
 def test_department_trend_weekend_rate_is_null(client):
-    create_employee(client, EMPLOYEES[0])
-    create_employee(client, EMPLOYEES[1])
+    create_employee(client, EMPLOYEES[0], name=f"Analytics {EMPLOYEES[0]}", department=DEPARTMENT, joined_on="2026-10-01")
+    create_employee(client, EMPLOYEES[1], name=f"Analytics {EMPLOYEES[1]}", department=DEPARTMENT, joined_on="2026-10-01")
 
     insert_attendance(
         EMPLOYEES[0], "2026-10-10",
@@ -118,7 +108,7 @@ def test_department_trend_weekend_rate_is_null(client):
 
 def test_mid_month_joiner_without_logs_has_correct_monthly_analytics(client):
     code = EMPLOYEES[1]
-    create_employee(client, code, "2026-10-15")
+    create_employee(client, code, name=f"Analytics {code}", department=DEPARTMENT, joined_on="2026-10-15")
 
     response = client.get(
         f"/analytics/employees/{code}/monthly",
@@ -136,8 +126,8 @@ def test_mid_month_joiner_without_logs_has_correct_monthly_analytics(client):
 
 
 def test_late_leaderboard_assigns_same_rank_for_equal_totals(client):
-    create_employee(client, EMPLOYEES[0])
-    create_employee(client, EMPLOYEES[1])
+    create_employee(client, EMPLOYEES[0], name=f"Analytics {EMPLOYEES[0]}", department=DEPARTMENT, joined_on="2026-10-01")
+    create_employee(client, EMPLOYEES[1], name=f"Analytics {EMPLOYEES[1]}", department=DEPARTMENT, joined_on="2026-10-01")
 
     for code in EMPLOYEES:
         insert_attendance(
@@ -171,8 +161,8 @@ def test_late_leaderboard_assigns_same_rank_for_equal_totals(client):
 
 
 def test_department_trend_includes_weekdays_without_attendance_logs(client):
-    create_employee(client, EMPLOYEES[0])
-    create_employee(client, EMPLOYEES[1])
+    create_employee(client, EMPLOYEES[0], name=f"Analytics {EMPLOYEES[0]}", department=DEPARTMENT, joined_on="2026-10-01")
+    create_employee(client, EMPLOYEES[1], name=f"Analytics {EMPLOYEES[1]}", department=DEPARTMENT, joined_on="2026-10-01")
 
     response = client.get(
         f"/analytics/departments/{DEPARTMENT}/trend",
