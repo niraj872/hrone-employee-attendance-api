@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 
 import hmac
 
@@ -657,7 +658,11 @@ def explain(endpoint: str, emp_code: Optional[str] = None, month: Optional[str] 
             pipeline = department_trend_pipeline(department, first, last)
             plan = db.command("explain", {"aggregate": 1, "pipeline": pipeline, "cursor": {}},
                               verbosity="executionStats")
-        return {"endpoint": endpoint, "collection": collection, "explain": plan}
+        return {
+            "endpoint": endpoint,
+            "collection": collection,
+            "explain": json.loads(json.dumps(plan, default=str))
+        }
     except HTTPException:
         raise
     except PyMongoError:
