@@ -1,19 +1,15 @@
-﻿from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
 
-import pytest
-from fastapi.testclient import TestClient
+from tests.helpers import create_employee, epoch_ms
 
-from app.main import app, db
+import pytest
+
+from app.main import db
 
 
 TEST_EMPLOYEES = ["EMP990001", "EMP990002", "EMP990003", "EMP990004"]
 
-
-@pytest.fixture
-def client():
-    with TestClient(app) as test_client:
-        yield test_client
 
 
 @pytest.fixture(autouse=True)
@@ -34,27 +30,6 @@ def clean_test_data(client):
     )
 
 
-def create_employee(client, emp_code):
-    response = client.post(
-        "/employees",
-        json={
-            "emp_code": emp_code,
-            "name": "Concurrency Test",
-            "email": f"{emp_code.lower()}@example.test",
-            "department": "QA_TEST",
-            "joined_on": date.today().isoformat(),
-            "shift_start": "09:30",
-            "shift_end": "18:30",
-        },
-    )
-    assert response.status_code == 201, response.text
-
-
-def epoch_ms(hour):
-    moment = datetime.now(timezone.utc).replace(
-        hour=hour, minute=0, second=0, microsecond=0
-    )
-    return int(moment.timestamp() * 1000)
 
 
 def concurrent_posts(client, path, payload, count=8):
@@ -68,14 +43,14 @@ def concurrent_posts(client, path, payload, count=8):
 
 def test_concurrent_punch_in_creates_only_one_record(client):
     emp_code = TEST_EMPLOYEES[0]
-    create_employee(client, emp_code)
+    create_employee(client, emp_code, name="Concurrency Test", department="QA_TEST", joined_on=date.today().isoformat())
 
     responses = concurrent_posts(
         client,
         "/attendance/punch-in",
         {
             "emp_code": emp_code,
-            "punched_at": epoch_ms(10),
+            "punched_at": epoch_ms(datetime.now(timezone.utc).replace(hour=10, minute=0, second=0, microsecond=0)),
             "status": "PRESENT",
         },
     )
@@ -94,13 +69,13 @@ def test_concurrent_punch_in_creates_only_one_record(client):
 
 def test_concurrent_punch_out_updates_record_only_once(client):
     emp_code = TEST_EMPLOYEES[1]
-    create_employee(client, emp_code)
+    create_employee(client, emp_code, name="Concurrency Test", department="QA_TEST", joined_on=date.today().isoformat())
 
     punch_in = client.post(
         "/attendance/punch-in",
         json={
             "emp_code": emp_code,
-            "punched_at": epoch_ms(10),
+            "punched_at": epoch_ms(datetime.now(timezone.utc).replace(hour=10, minute=0, second=0, microsecond=0)),
             "status": "PRESENT",
         },
     )
@@ -111,7 +86,7 @@ def test_concurrent_punch_out_updates_record_only_once(client):
         "/attendance/punch-out",
         {
             "emp_code": emp_code,
-            "punched_at": epoch_ms(18),
+            "punched_at": epoch_ms(datetime.now(timezone.utc).replace(hour=18, minute=0, second=0, microsecond=0)),
         },
     )
 

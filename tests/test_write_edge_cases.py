@@ -1,9 +1,10 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
+
+from tests.helpers import create_employee, employee_payload
 
 import pytest
-from fastapi.testclient import TestClient
 
-from app.main import app, db
+from app.main import db
 
 CODES = ["EMP980001", "EMP980002", "EMP980003"]
 TEST_DAY = "2026-10-12"
@@ -14,11 +15,6 @@ PUNCH_OUT_MS = int(
     datetime(2026, 10, 12, 12, 0, tzinfo=timezone.utc).timestamp() * 1000
 )
 
-
-@pytest.fixture
-def client():
-    with TestClient(app) as c:
-        yield c
 
 
 @pytest.fixture(autouse=True)
@@ -35,23 +31,6 @@ def isolated_records():
         db.attendance_logs.delete_many({"emp_code": code})
         db.employees.delete_many({"emp_code": code})
 
-
-def employee_payload(code=CODES[0]):
-    return {
-        "emp_code": code,
-        "name": "Regression Test Employee",
-        "email": f"{code.lower()}@example.test",
-        "department": "QA_REGRESSION",
-        "joined_on": TEST_DAY,
-        "shift_start": "09:30",
-        "shift_end": "18:30",
-    }
-
-
-def create_employee(client, code=CODES[0]):
-    response = client.post("/employees", json=employee_payload(code))
-    assert response.status_code == 201, response.text
-    return response
 
 
 def punch_in(client, code=CODES[0]):
