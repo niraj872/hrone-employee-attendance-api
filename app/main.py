@@ -40,6 +40,12 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pymongo import ASCENDING, DESCENDING, MongoClient, ReturnDocument
 from pymongo.errors import DuplicateKeyError, PyMongoError, ServerSelectionTimeoutError
+from app.timeutil import (
+    IST, UTC, now_utc_naive, from_epoch_ms, as_utc_naive, ist_dt,
+    attendance_date, shift_instant, compute_late_minutes, compute_work_hours,
+    compute_overtime, compute_half_day, round_half_up, parse_month, month_bounds,
+    is_weekday, date_match, validate_iso_day,
+)
 from app.pipelines import (
     employee_monthly_pipeline,
     department_summary_pipeline,
