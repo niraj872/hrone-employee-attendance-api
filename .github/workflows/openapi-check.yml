@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [master]
   push:
-    branches: [master, autter/fix-updates]
+    branches: [master, autter/fix-updates, autter/final-audit-cleanup]
 
 jobs:
   validate:
