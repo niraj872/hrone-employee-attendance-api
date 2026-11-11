@@ -376,7 +376,6 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - ApiKeyAuth: []
-
   /admin/explain/{endpoint}:
     get:
       summary: Explain
