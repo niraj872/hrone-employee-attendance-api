@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta, timezone
+import calendar
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Optional
+
+from fastapi import HTTPException
 
 IST = timezone(timedelta(hours=5, minutes=30))
 UTC = timezone.utc
@@ -82,8 +85,6 @@ def round_half_up(value: Any, places: int = 2) -> float:
     quantum = Decimal("1") if places == 0 else Decimal("1." + "0" * places)
     return float(Decimal(str(value)).quantize(quantum, rounding=ROUND_HALF_UP))
 
-
-def pagination(page: int, page_size: int) -> int:
 
 def parse_month(month: str) -> tuple[date, date]:
     try:
