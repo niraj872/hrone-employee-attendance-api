@@ -40,4 +40,9 @@ The included unit tests and syntax check are not a substitute for running the AP
 
 
 ## Authentication
-Protected write and admin endpoints require an x-api-key header whose value matches the API_KEY environment variable. Configure API_KEY before starting the application, and never commit real API keys.
+All employee, attendance, analytics, and admin API operations require an `x-api-key` header whose value matches the `API_KEY` environment variable. The `/health` endpoint is public. Configure `API_KEY` before starting the application, and never commit real API keys.
+
+For a protected endpoint, pass `x-api-key: <your-api-key>` in the request headers. Missing or invalid keys return HTTP 401. The interactive API documentation is available at `/docs`.
+
+## Deployment health checks
+Configure the Render web service health-check path to `/health` (Render Dashboard → service → Settings → Health Check Path). The application does not expose a `/` route; a 404 at `/` is expected and is not a health-check result. The `/health` endpoint reports database availability and returns HTTP 503 when MongoDB is unavailable.
