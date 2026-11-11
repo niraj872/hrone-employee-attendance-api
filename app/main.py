@@ -386,7 +386,7 @@ def create_employee(body: EmployeeIn):
     return doc
 
 
-@app.get("/employees")
+@app.get("/employees", dependencies=[Depends(verify_token)])
 def list_employees(department: Optional[str] = None, page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100)):
     skip = pagination(page, page_size)
     query = {"department": department} if department else {}
@@ -526,7 +526,7 @@ def regularize(emp_code: str, date: str, body: RegularizeIn):
     return public_doc(updated)
 
 
-@app.get("/analytics/employees/{emp_code}/monthly")
+@app.get("/analytics/employees/{emp_code}/monthly", dependencies=[Depends(verify_token)])
 def employee_monthly(emp_code: str, month: str):
     emp = db.employees.find_one({"emp_code": emp_code})
     if not emp:
@@ -554,7 +554,7 @@ def employee_monthly(emp_code: str, month: str):
 
 
 
-@app.get("/analytics/departments/summary")
+@app.get("/analytics/departments/summary", dependencies=[Depends(verify_token)])
 def department_summary(month: str, department: Optional[str] = None):
     start, end = month_bounds(month)
     items = list(db.employees.aggregate(department_summary_pipeline(start, end, department)))
@@ -566,7 +566,7 @@ def department_summary(month: str, department: Optional[str] = None):
 
 
 
-@app.get("/analytics/leaderboard/late")
+@app.get("/analytics/leaderboard/late", dependencies=[Depends(verify_token)])
 def late_leaderboard(month: str, limit: int = Query(10, ge=1, le=50),
                      department: Optional[str] = None):
     start, end = month_bounds(month)
@@ -575,7 +575,7 @@ def late_leaderboard(month: str, limit: int = Query(10, ge=1, le=50),
 
 
 
-@app.get("/analytics/departments/{department}/trend")
+@app.get("/analytics/departments/{department}/trend", dependencies=[Depends(verify_token)])
 def department_trend(department: str, from_date: str = Query(..., alias="from"),
                      to_date: str = Query(..., alias="to")):
     validate_iso_day(from_date, "from")

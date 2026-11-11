@@ -78,6 +78,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - ApiKeyAuth: []
   /attendance/punch-in:
     post:
       summary: Punch In
@@ -260,6 +262,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - ApiKeyAuth: []
   /analytics/departments/summary:
     get:
       summary: Department Summary
@@ -291,6 +295,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - ApiKeyAuth: []
   /analytics/leaderboard/late:
     get:
       summary: Late Leaderboard
@@ -331,6 +337,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - ApiKeyAuth: []
   /analytics/departments/{department}/trend:
     get:
       summary: Department Trend
@@ -366,6 +374,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - ApiKeyAuth: []
   /admin/explain/{endpoint}:
     get:
       summary: Explain
