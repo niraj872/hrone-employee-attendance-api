@@ -42,7 +42,8 @@ def test_openapi_security_matches_route_dependencies():
     }
 
     assert actual_protected == expected_protected
-    assert len(actual_protected) == 6
+    assert len(actual_protected) == 11
+    assert ('/health', 'get') not in actual_protected
 
 
 def app_root():
