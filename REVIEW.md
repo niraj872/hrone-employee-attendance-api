@@ -8,12 +8,20 @@
 - [x] GitHub pull requests #2 and #3 merged to `master`.
 - [x] GitHub Actions run [42968180525](https://github.com/niraj872/hrone-employee-attendance-api/actions/runs/42968180525) succeeded.
 
+## Security and dependency audit (2026-11-12)
+- [x] Python runtime pinned to **3.14.10**, matching Render's last successful Python runtime.
+- [x] `pip-audit --strict -r requirements.txt`: **No known vulnerabilities found** in the resolved Python dependency tree (GitHub Actions run [43238318075](https://github.com/niraj872/hrone-employee-attendance-api/actions/runs/43238318075)).
+- [x] `pip check`: passed.
+- [x] Security minimum-version regression tests added for certifi, PyYAML, AnyIO, FastAPI, HTTPX, PyMongo, and Uvicorn.
+- [x] Weekly Dependabot updates enabled for pip dependencies and GitHub Actions.
+- [x] Full test suite: **43 passed, 1 Starlette/httpx deprecation warning**.
+
 ## Production deployment (2026-11-11)
 - [x] Render service `hrone-employee-attendance-api` deployed from `master`.
 - [x] Deployment `dep-dbq0ikgae00c73cuje4g` reached **live** at 06:22 UTC.
 - [x] Optional OpenTelemetry tracing disabled via `AUTTER_TRACING_ENABLED=false` because no OTLP collector is configured.
 - [x] Previous live smoke tests: `/health` returned 200; `/employees` returned 401 without a key and 200 with a valid key.
-- [ ] Configure the Render service Health Check Path to `/health` and verify it in service settings (dashboard-only configuration; not changed by this documentation update).
+- [x] Render service Health Check Path confirmed as `/health` in service settings (verified 2026-11-12).
 - [ ] Run a fresh authenticated end-to-end smoke test after the final deployment; do not put secrets in logs or commits.
 - [ ] Verify MongoDB-unavailable behavior returns HTTP 503 in a controlled test (avoid intentionally breaking production).
 
