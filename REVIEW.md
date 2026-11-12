@@ -14,7 +14,7 @@
 - [x] `pip check`: passed.
 - [x] Security minimum-version regression tests added for certifi, PyYAML, AnyIO, FastAPI, HTTPX, PyMongo, and Uvicorn.
 - [x] Weekly Dependabot updates enabled for pip dependencies and GitHub Actions.
-- [x] Full test suite: **43 passed, 1 Starlette/httpx deprecation warning**.
+- [x] Full test suite: **44 passed, no warnings** after switching Starlette TestClient to the supported `httpx2` backend.
 
 ## Production deployment (2026-11-11)
 - [x] Render service `hrone-employee-attendance-api` deployed from `master`.
