@@ -43,3 +43,11 @@ def test_production_python_runtime_is_pinned_to_the_ca_patched_release():
     version_file = REQUIREMENTS.parent / ".python-version"
     assert version_file.exists(), "Pin the Python runtime in .python-version"
     assert version_file.read_text(encoding="utf-8").strip() == "3.14.10"
+
+
+def test_starlette_test_client_uses_httpx2_backend():
+    declared = REQUIREMENTS.read_text(encoding="utf-8").lstrip("\ufeff")
+    floor = _declared_floor(declared, "httpx2")
+    assert _version_tuple(floor) >= _version_tuple("2.13.0"), (
+        "Starlette TestClient should use httpx2 instead of deprecated httpx fallback"
+    )
