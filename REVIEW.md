@@ -22,8 +22,15 @@
 - [x] Optional OpenTelemetry tracing disabled via `AUTTER_TRACING_ENABLED=false` because no OTLP collector is configured.
 - [x] Previous live smoke tests: `/health` returned 200; `/employees` returned 401 without a key and 200 with a valid key.
 - [x] Render service Health Check Path confirmed as `/health` in service settings (verified 2026-11-12).
-- [ ] Run a fresh authenticated end-to-end smoke test after the final deployment; do not put secrets in logs or commits.
-- [ ] Verify MongoDB-unavailable behavior returns HTTP 503 in a controlled test (avoid intentionally breaking production).
+- [x] Authenticated end-to-end CI test: create employee → list employees → punch in → punch out → read attendance, using the CI-only API key and isolated MongoDB 7 test database (GitHub Actions run [43241026521](https://github.com/niraj872/hrone-employee-attendance-api/actions/runs/43241026521)).
+- [x] MongoDB-unavailable health behavior: isolated test simulates PyMongo `ServerSelectionTimeoutError` and verifies `/health` returns HTTP 503; production MongoDB is never interrupted.
+- [ ] Fresh authenticated smoke test against the deployed Render service remains pending because the production `API_KEY` is a private Render secret and is not available to CI or this review. Do not paste it into chat or commit it.
+
+## Latest verification (2026-11-12)
+- [x] `pip-audit --strict -r requirements.txt`: no known vulnerabilities found.
+- [x] `pip check` and OpenAPI schema validation passed.
+- [x] Full test suite: **45 passed, no warnings**, including authenticated end-to-end flow and simulated MongoDB 503.
+- [x] Render deployment is live; `/health` returned HTTP 200 after startup.
 
 ## Local dataset and performance checks (previous audit)
 - [x] Python syntax compilation: `python -m compileall -q app tests`.
